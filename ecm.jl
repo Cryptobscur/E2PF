@@ -11,15 +11,31 @@ end
 point() = point(0, 0, 0)
 
 ## Addition de deux points non égaux P et Q sur une courbe de Weierstrass : y^2 = x^3 + ax + b ##
-function add_weierstrass(P::point, Q::point, N::BigInt)
+function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	
 	R = point()
 
-	## TODO : tester les points particuliers ##
+	## Si un des points est le point à l'infini (i.e l'élément neutre)
+	## alors la somme aura pour résultat l'autre point 
+	
+	if P.Z == 0
+		return Q
+	else if Q.Z == 0
+		return P
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
 	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	tmpV = ((Q.X * P.Z) - (P.X * Q.Z)) % N
+
+	if tmpV == 0 # alors P.X = Q.X, P.Z = Q.Z
+		
+		if tmpU == 0 # alors  P.Y = Q.Y   => P = Q 
+			return double_weierstrass(P, a, N)
+
+		else # si P.Y != Q.Y, i.e si deux points ont meme abscisse mais différente ordonnée alors forcément P.Y = -Q.Y, 
+			return point(0, 1, 0) # il s'ensuit alors une somme de la forme P + (-P) et cela se traduit par le point à l'infini
+		end
+	end
 
 	tmpUU = tmpU^2 % N
 	tmpVV = tmpV^2 % N
@@ -43,11 +59,19 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	
 	R = point()
 
-	## TODO : tester les points particuliers ##
+	# on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
-    # on effectue quelques calculs préliminaires pour accélérer le calcul global #
-	tmpU::BigInt = ((3 * P.X) + (a * P.Z^2)) % N
+	## Si P est un point 2-torsion alors 2P = 0 (point à l'infini).
+	## Si P est le point à l'infini (l'élément neutre), le multiplier par deux donnera 
+	## également le point à l'infini, on s'évite donc les tests exécutés dans l'addition.
+	## Le point à l'infini est (0:1:0), et de manière plus simple R.X = 0, R.Y != 0, R.Z = 0
+	## D'après les formules ci-dessous, cela s'atteint pour tmpV = 0
+
 	tmpV::BigInt = (2 * P.Y * P.Z) % N
+	if tmpV == 0
+		return point(0, 1, 0)
+
+	tmpU::BigInt = ((3 * P.X) + (a * P.Z^2)) % N
 
 	tmpUU::BigInt = tmpU^2 % N
 	tmpVV::BigInt = tmpV^2 % N
