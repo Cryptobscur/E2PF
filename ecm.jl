@@ -20,8 +20,9 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	
 	if P.Z == 0
 		return Q
-	else if Q.Z == 0
+	elseif Q.Z == 0
 		return P
+	end
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
 	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
@@ -72,7 +73,8 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	tmpV::BigInt = (2 * P.Y * P.Z) % N
 	if tmpV == 0
 		return point(0, 1, 0)
-
+	end
+	
 	tmpU::BigInt = ((3 * P.X) + (a * P.Z^2)) % N
 
 	tmpUU::BigInt = tmpU^2 % N
