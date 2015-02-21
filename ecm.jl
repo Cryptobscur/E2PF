@@ -21,7 +21,7 @@ function add_weierstrass(P::point, Q::point, N::BigInt)
 	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	tmpV = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 
-	tmpUU = tmpU^2 % N # en fait, tmpUU n'est utilisée qu'une fois, mais cela améliore la compréhension
+	tmpUU = tmpU^2 % N
 	tmpVV = tmpV^2 % N
 
 	tmpZP_ZQ = (P.Z * Q.Z) % N
@@ -49,7 +49,7 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	tmpU::BigInt = ((3 * P.X) + (a * P.Z^2)) % N
 	tmpV::BigInt = (2 * P.Y * P.Z) % N
 
-	tmpUU::BigInt = tmpU^2 % N # en fait, tmpUU n'est utilisée qu'une fois, mais cela améliore un peu la compréhension
+	tmpUU::BigInt = tmpU^2 % N
 	tmpVV::BigInt = tmpV^2 % N
 
 	tmpVVV::BigInt = (tmpV * tmpVV) % N
@@ -57,7 +57,7 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
 	tmpX::BigInt = ((tmpUU * P.Z) - (2 * P.X * tmpVV)) % N # formule initiale : (tmpU^2 * P.Z) - (2 * P.X * tmpV^2)
 
-	# on calcule les valeurs du point R, somme de P et Q #
+	# on calcule les valeurs du point R, somme de P et P (= 2P) #
 	R.Y = ((tmpU * (P.X * tmpVV - tmpX)) - (tmpVVV * P.Y)) % N # formule initiale : tmpU * (P.X * tmpV^2 - (R.X / tmpV)) - (tmpV^3 * P.Y)
 	R.Z = (tmpVVV * P.Z) % N # formule initiale : tmpV^3 * P.Z
 	R.X = (tmpX * tmpV) % N # formule initiale : (tmpU^2 * tmpV * P.Z) - (2 * P.X * tmpV^3)
