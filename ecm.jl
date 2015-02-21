@@ -27,6 +27,8 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	tmpV = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 
+	# j'ai tout de meme l'impression que tmpv = 0 implique le point à l'infini directement comme pour le "double"... à voir #
+
 	if tmpV == 0 # alors P.X = Q.X, P.Z = Q.Z
 		
 		if tmpU == 0 # alors  P.Y = Q.Y   => P = Q 
