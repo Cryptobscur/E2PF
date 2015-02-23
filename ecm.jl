@@ -25,20 +25,21 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	end
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
-	tmpV = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 
+	tmpV::BigInt = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
 		return point(0, 1, 0)
+	end
 
-	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
+	tmpU::BigInt = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	
-	tmpUU = tmpU^2 % N
-	tmpVV = tmpV^2 % N
+	tmpUU::BigInt = tmpU^2 % N
+	tmpVV::BigInt = tmpV^2 % N
 
-	tmpZP_ZQ = (P.Z * Q.Z) % N
+	tmpZP_ZQ::BigInt = (P.Z * Q.Z) % N
 
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
-	tmpX = ((tmpUU * tmpZP_ZQ) + (tmpV * tmpVV)) % N # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^2)
+	tmpX::BigInt = ((tmpUU * tmpZP_ZQ) + (tmpV * tmpVV)) % N # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^2)
 
 	# on calcule les valeurs du point R, somme de P et Q #
 	R.Y = ((tmpVV * (tmpU * P.X - tmpV * P.Y) * Q.Z) - (tmpU * tmpX)) % N # formule initiale : (tmpV^2 * ((tmpU * P.X) - (tmpV * P.Y)) * Q.Z) - (tmpU * (R.X / tmpV))
