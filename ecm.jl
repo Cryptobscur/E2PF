@@ -124,10 +124,13 @@ function ecm(x::BigInt, N::BigInt)
 	# surement possible de faire qqc de plus "propre" #
 	a = BigInt(iround(BigFloat(rand() * (N - 1))))
 
-	#X = BigInt(iround(BigFloat(rand() * (N - 1))))
-	#Y = BigInt(iround(BigFloat(rand() * (N - 1))))
+	## si jamais on fixe b à 1 (bien que cela ne change rien du point de vue du code)
+	## on peut alors prendre d'office le point (0:1:1) et on s'évite les deux lignes de code ci-dessous
 
-	P = point(0, 1, 1) # choix judicieux ?
+	# X = BigInt(iround(BigFloat(rand() * (N - 1)))) 
+	# Y = BigInt(iround(BigFloat(rand() * (N - 1))))
+
+	P = point(0, 1, 1) # mais est-ce un choix judicieux ?
 
 	R::point = double_and_add(P, x, a, N)
 
