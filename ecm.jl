@@ -25,21 +25,13 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	end
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
-	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	tmpV = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 
-	# j'ai tout de meme l'impression que tmpv = 0 implique le point à l'infini directement comme pour le "double"... à voir #
+	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
+		return point(0, 1, 0)
 
-	if tmpV == 0 # alors P.X = Q.X, P.Z = Q.Z
-		
-		if tmpU == 0 # alors  P.Y = Q.Y   => P = Q 
-			return double_weierstrass(P, a, N)
-
-		else # si P.Y != Q.Y, i.e si deux points ont meme abscisse mais différente ordonnée alors forcément P.Y = -Q.Y, 
-			return point(0, 1, 0) # il s'ensuit alors une somme de la forme P + (-P) et cela se traduit par le point à l'infini
-		end
-	end
-
+	tmpU = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
+	
 	tmpUU = tmpU^2 % N
 	tmpVV = tmpV^2 % N
 
@@ -111,7 +103,7 @@ function double_and_add(P::point, x::BigInt, a::BigInt, N::BigInt)
 		double_P = double_weierstrass(P, a, N) # double
 
 		if bin_x[i] == 1
-			P = add_weierstrass(P, double_P, N) # add
+			P = add_weierstrass(P, double_P, a, N) # add
 		end
 
 	end
@@ -120,8 +112,23 @@ function double_and_add(P::point, x::BigInt, a::BigInt, N::BigInt)
 
 end
 
-## à compléter ##
-function ecm()
+## à finaliser ##
+function ecm(x::BigInt, N::BigInt)
 
+	## On initialise une courbe et un point sur cette courbe.
+	## On fixe la coordonnée Z à 1 afin de se retrouver sous la forme y^2 = x^3 + ax + b
+	## De cette façon, b est déterminé par le calcul de y^2 - x^3 - ax
+	## et on obtient un point valable, mais, au final, on ne s'en sert pas, donc à ignorer.
+
+	# surement possible de faire qqc de plus "propre" #
+	a = BigInt(iround(BigFloat(rand() * (N - 1))))
+
+	#X = BigInt(iround(BigFloat(rand() * (N - 1))))
+	#Y = BigInt(iround(BigFloat(rand() * (N - 1))))
+
+	P = point(0, 1, 1) # choix judicieux ?
+
+	R::point = double_and_add(P, x, a, N)
+
+	return BigInt(gcd(R.Z, N))
 end
-
