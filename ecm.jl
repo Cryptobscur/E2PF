@@ -28,6 +28,8 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
 	tmpV::BigInt = ((Q.X * P.Z) - (P.X * Q.Z)) % N
+	
+	### REVOIR CE POINT (PAS CLAIR...) ###
 	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
 		return point(0, 1, 0)
 	end
@@ -221,8 +223,7 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 
 		Re::point = double_and_add(Pe, x, d, N, 'e')
 
-		zero::BigInt = BigInt(gcd(Re.X, N))
-		return zero
+		return BigInt(gcd(Re.X, N))
 	end
 end
 
