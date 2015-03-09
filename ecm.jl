@@ -30,12 +30,20 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	tmpV::BigInt = ((Q.X * P.Z) - (P.X * Q.Z)) % N
 	
 	### REVOIR CE POINT (PAS CLAIR...) ###
-	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
-		return point(0, 1, 0)
-	end
+	#if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
+		#return point(0, 1, 0)
+	#end
 
 	tmpU::BigInt = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
 	
+	if tmpV == 0
+	        if tmpU == 0
+	            return double_weierstrass(P, a, N)
+	        else
+	            return point(0, 1, 0)
+	        end
+    	end
+    	
 	tmpUU::BigInt = tmpU^2 % N
 	tmpVV::BigInt = tmpV^2 % N
 
