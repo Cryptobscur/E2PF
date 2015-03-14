@@ -5,43 +5,41 @@ begin
 
 	N = BigInt(ARGS[1])
 
-	if isprime(N)
-		println(N)
-		return
-	end
+	#if isprime(N)
+		#println(N)
+		#return
+	#end
 
-	racine = BigInt(iround(BigFloat(sqrt(N))))
-
-	B = BigInt(iround(BigFloat(exp((1 / sqrt(2)) * sqrt(log(racine) * log(log(racine)))))))
+	#p = BigInt("1125899906842679")
+	p = BigInt("1152921504606847009")
+	P = p + 1 + 2 * iround(sqrt(p))
+	B = BigInt(iround(BigFloat(exp((1 / sqrt(2)) * sqrt(log(P) * log(log(P)))))))
 
 	x = BigInt(1)
 
-	#liste_x = BigInt[]
-
-	for q = 2:B
+	for q::BigInt = 2:B
 		if isprime(q)
 
-			x *= q^(iround(log(q, N)))
-			#push!(liste_x, x)
+			x *= q^(iround(log(q, P)))
 		end
 	end
 
+	#x = BigInt(1034)
 	facteur = BigInt(1)
 	nb_courbes = 0
 
-	for i = 1:450
+	tic()
+	for i = 1:250
 
-		print(nb_courbes)
-		print(" ")
+		print("$nb_courbes ")
 		facteur = ecm_f(x, N, 'e')
 		nb_courbes += 1
 
 		if facteur != 1 && facteur != N
 		
-			side = BigInt(N / facteur)
-			print(facteur)
-			print(" * ")
-			println(side)
+			toc()
+			side::BigInt = N / facteur
+			println("$facteur * $side")
 			return
 		end
 	end
