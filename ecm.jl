@@ -64,13 +64,13 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 
 	# on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
-	## Si P est un point 2-torsion alors 2P = 0 (point à l'infini), ou encore y = 0 (ne pas confondre avec P.Y)
+	## Si P est un point 2-torsion alors 2P = 0 (point à l'infini), ou encore P.Y = 0
 	## Si P est le point à l'infini (l'élément neutre), le multiplier par deux donnera 
 	## également le point à l'infini, on s'évite donc les tests exécutés dans l'addition.
 
 	tmpV::BigInt = mod(2 * P.Y * P.Z, N)
 
-	if tmpV == 0 # alors on a y = 0 (P.Y * P.Z = (y/z) * z = y)
+	if tmpV == 0 # alors on a P.Y = 0 (=> point 2-torsion) ou P.Z = 0 (point à l'infini), dans les deux cas, le doublement donnera le point à l'infini
 		return point(0, 1, 0)
 	end
 	
