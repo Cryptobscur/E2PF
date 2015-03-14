@@ -30,10 +30,10 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	tmpV::BigInt = mod((Q.X * P.Z) - (P.X * Q.Z), N)
 	tmpU::BigInt = mod((Q.Y * P.Z) - (P.Y * Q.Z), N)
 
-	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
-		if tmpU == 0
+	if tmpV == 0 # alors P.X = Q.X
+		if tmpU == 0 # alors P.Y = Q.Y donc P = Q
 			return double_weierstrass(P, a, N)
-		else
+		else # Q = -P donc on additionne P et -P
 			return point(0, 1, 0)
 		end
 	end
@@ -64,14 +64,13 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 
 	# on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
-	## Si P est un point 2-torsion alors 2P = 0 (point à l'infini).
+	## Si P est un point 2-torsion alors 2P = 0 (point à l'infini), ou encore y = 0 (ne pas confondre avec P.Y)
 	## Si P est le point à l'infini (l'élément neutre), le multiplier par deux donnera 
 	## également le point à l'infini, on s'évite donc les tests exécutés dans l'addition.
-	## Le point à l'infini est (0:1:0), et de manière plus simple R.X = 0, R.Y != 0, R.Z = 0
-	## D'après les formules ci-dessous, cela s'atteint pour tmpV = 0
 
 	tmpV::BigInt = mod(2 * P.Y * P.Z, N)
-	if tmpV == 0
+
+	if tmpV == 0 # alors on a y = 0 (P.Y * P.Z = (y/z) * z = y)
 		return point(0, 1, 0)
 	end
 	
@@ -83,9 +82,11 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	tmpVVV::BigInt = mod(tmpV * tmpVV, N)
 
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
+
 	tmpX::BigInt = mod((tmpUU * P.Z) - (2 * P.X * tmpVV), N) # formule initiale : (tmpU^2 * P.Z) - (2 * P.X * tmpV^2)
 
 	# on calcule les valeurs du point R, somme de P et P (= 2P) #
+
 	R.Y = mod((tmpU * (P.X * tmpVV - tmpX)) - (tmpVVV * P.Y), N) # formule initiale : tmpU * (P.X * tmpV^2 - (R.X / tmpV)) - (tmpV^3 * P.Y)
 	R.Z = mod(tmpVVV * P.Z, N) # formule initiale : tmpV^3 * P.Z
 	R.X = mod(tmpX * tmpV, N) # formule initiale : (tmpU^2 * tmpV * P.Z) - (2 * P.X * tmpV^3)
@@ -153,17 +154,6 @@ function double_and_add(P::point, x::BigInt, vs::BigInt, N::BigInt, modele::Char
 
 	elseif modele == 'e'
 
-		#double_P = point(0, 1, 1)
-
-		#for i = length(bin_x):-1:1
-			
-			#double_P = double_edwards(P, vs, N) # double 
-
-			#if bin_x[i] == 1
-			#	P = add_edwards(P, double_P, vs, N) # add
-			#end
-		#end
-
 		R = point(0, 1, 1)
 		double_P = P
 
@@ -201,14 +191,14 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		Xw::BigInt = iround(BigFloat(rand() * (N - 1)))
 		Yw::BigInt = iround(BigFloat(rand() * (N - 1)))
 
-		Pw = point(0, 1, 1)
+		Pw = point(0, 1, 1) # 0 et 1 ou Xw et Yw ?
 
 		Rw::point = double_and_add(Pw, x, a, N, 'w')
 
 		println(Rw)
-		zero2::BigInt = BigInt(gcd(Rw.Z, N))
-		println("PGCD = $zero2")
-		return zero2
+		val::BigInt = BigInt(gcd(Rw.Z, N))
+		println("PGCD = $val")
+		return val
 
 	elseif modele == 'e' # Edwards
 
@@ -243,9 +233,9 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		Re::point = double_and_add(Pe, x, d, N, 'e')
 
 		println(Re)
-		zero::BigInt = BigInt(gcd(Re.X, N))
-		println("PGCD = $zero")
-		return zero
+		val2::BigInt = BigInt(gcd(Re.X, N))
+		println("PGCD = $val2")
+		return val2
 	end
 end
 
