@@ -1,7 +1,7 @@
 
 module ecm
 
-export ecm_f
+export ecm_f, double_and_add
 
 type point # Un point en coordonnees projectives #
 	X::BigInt
@@ -27,35 +27,31 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
-	tmpV::BigInt = ((Q.X * P.Z) - (P.X * Q.Z)) % N
-	
-	### REVOIR CE POINT (PAS CLAIR...) ###
-	#if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
-		#return point(0, 1, 0)
-	#end
+	tmpV::BigInt = mod((Q.X * P.Z) - (P.X * Q.Z), N)
+	tmpU::BigInt = mod((Q.Y * P.Z) - (P.Y * Q.Z), N)
 
-	tmpU::BigInt = ((Q.Y * P.Z) - (P.Y * Q.Z)) % N
+	if tmpV == 0 # alors on obtient R.X = 0, R.Y != 0, R.Z = 0
+		if tmpU == 0
+			return double_weierstrass(P, a, N)
+		else
+			return point(0, 1, 0)
+		end
+	end
 	
-	if tmpV == 0
-	        if tmpU == 0
-	            return double_weierstrass(P, a, N)
-	        else
-	            return point(0, 1, 0)
-	        end
-    	end
-    	
-	tmpUU::BigInt = tmpU^2 % N
-	tmpVV::BigInt = tmpV^2 % N
+	tmpUU::BigInt = mod(tmpU^2, N)
+	tmpVV::BigInt = mod(tmpV^2, N)
 
-	tmpZP_ZQ::BigInt = (P.Z * Q.Z) % N
+	tmpZP_ZQ::BigInt = mod(P.Z * Q.Z, N)
 
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
-	tmpX::BigInt = ((tmpUU * tmpZP_ZQ) + (tmpV * tmpVV)) % N # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^2)
+
+	tmpX::BigInt = mod((tmpUU * tmpZP_ZQ) - ((P.X * Q.Z + Q.X * P.Z) * tmpVV), N) # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^2)
 
 	# on calcule les valeurs du point R, somme de P et Q #
-	R.Y = ((tmpVV * (tmpU * P.X - tmpV * P.Y) * Q.Z) - (tmpU * tmpX)) % N # formule initiale : (tmpV^2 * ((tmpU * P.X) - (tmpV * P.Y)) * Q.Z) - (tmpU * (R.X / tmpV))
-	R.Z = (tmpV * tmpVV * tmpZP_ZQ) % N # formule initiale : tmpV^3 * P.Z * Q.Z
-	R.X = (tmpX * tmpV) % N # formule initiale : tmpU^2 * tmpV * P.Z * Q.Z - ((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^3
+
+	R.Y = mod((tmpVV * (tmpU * P.X - tmpV * P.Y) * Q.Z) - (tmpU * tmpX), N) # formule initiale : (tmpV^2 * ((tmpU * P.X) - (tmpV * P.Y)) * Q.Z) - (tmpU * (R.X / tmpV))
+	R.Z = mod(tmpV * tmpVV * tmpZP_ZQ, N) # formule initiale : tmpV^3 * P.Z * Q.Z
+	R.X = mod(tmpX * tmpV, N) # formule initiale : tmpU^2 * tmpV * P.Z * Q.Z - ((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^3
 
 	return R
 
@@ -74,25 +70,25 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	## Le point à l'infini est (0:1:0), et de manière plus simple R.X = 0, R.Y != 0, R.Z = 0
 	## D'après les formules ci-dessous, cela s'atteint pour tmpV = 0
 
-	tmpV::BigInt = (2 * P.Y * P.Z) % N
+	tmpV::BigInt = mod(2 * P.Y * P.Z, N)
 	if tmpV == 0
 		return point(0, 1, 0)
 	end
 	
-	tmpU::BigInt = ((3 * P.X) + (a * P.Z^2)) % N
+	tmpU::BigInt = mod(3 * (P.X)^2 + a * (P.Z)^2, N)
 
-	tmpUU::BigInt = tmpU^2 % N
-	tmpVV::BigInt = tmpV^2 % N
+	tmpUU::BigInt = mod(tmpU^2, N)
+	tmpVV::BigInt = mod(tmpV^2, N)
 
-	tmpVVV::BigInt = (tmpV * tmpVV) % N
+	tmpVVV::BigInt = mod(tmpV * tmpVV, N)
 
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
-	tmpX::BigInt = ((tmpUU * P.Z) - (2 * P.X * tmpVV)) % N # formule initiale : (tmpU^2 * P.Z) - (2 * P.X * tmpV^2)
+	tmpX::BigInt = mod((tmpUU * P.Z) - (2 * P.X * tmpVV), N) # formule initiale : (tmpU^2 * P.Z) - (2 * P.X * tmpV^2)
 
 	# on calcule les valeurs du point R, somme de P et P (= 2P) #
-	R.Y = ((tmpU * (P.X * tmpVV - tmpX)) - (tmpVVV * P.Y)) % N # formule initiale : tmpU * (P.X * tmpV^2 - (R.X / tmpV)) - (tmpV^3 * P.Y)
-	R.Z = (tmpVVV * P.Z) % N # formule initiale : tmpV^3 * P.Z
-	R.X = (tmpX * tmpV) % N # formule initiale : (tmpU^2 * tmpV * P.Z) - (2 * P.X * tmpV^3)
+	R.Y = mod((tmpU * (P.X * tmpVV - tmpX)) - (tmpVVV * P.Y), N) # formule initiale : tmpU * (P.X * tmpV^2 - (R.X / tmpV)) - (tmpV^3 * P.Y)
+	R.Z = mod(tmpVVV * P.Z, N) # formule initiale : tmpV^3 * P.Z
+	R.X = mod(tmpX * tmpV, N) # formule initiale : (tmpU^2 * tmpV * P.Z) - (2 * P.X * tmpV^3)
 
 	return R
 
@@ -107,20 +103,20 @@ function add_edwards(P::point, Q::point, d::BigInt, N::BigInt)
 
 	## le calcul trouve sa source ici : http://www.hyperelliptic.org/EFD/g1p/auto-edwards-projective.html#addition-add-2007-bl ##
 
-	A::BigInt = (P.Z * Q.Z) % N
-	B::BigInt = (A^2) % N
+	A::BigInt = mod(P.Z * Q.Z, N)
+	B::BigInt = mod(A^2, N)
 
-	C::BigInt = (P.X * Q.X) % N
-	D::BigInt = (P.Y * Q.Y) % N
+	C::BigInt = mod(P.X * Q.X, N)
+	D::BigInt = mod(P.Y * Q.Y, N)
 
-	E::BigInt = (d * C * D) % N
+	E::BigInt = mod(d * C * D, N)
 
-	F::BigInt = (B - E) % N
-	G::BigInt = (B + E) % N
+	F::BigInt = mod(B - E, N)
+	G::BigInt = mod(B + E, N)
 
-	R.X = (A * F * ((P.X + P.Y) * (Q.X + Q.Y) - C - D)) % N
-	R.Y = (A * G * (D - C)) % N
-	R.Z = (F * G) % N # formule initiale : c * F * G
+	R.X = mod(A * F * ((P.X + P.Y) * (Q.X + Q.Y) - C - D), N)		
+	R.Y = mod(A * G * (D - C), N)
+	R.Z = mod(F * G, N) # formule initiale : c * F * G
 
 	return R
 end
@@ -128,8 +124,7 @@ end
 ## Doublement d'un point P (= 2P) sur une courbe d'Edwards : x^2 + y^2 = 1 + d * x^2 * y^2 ##
 function double_edwards(P::point, d::BigInt, N::BigInt)
 
-	## l'addition est unifiée sur les courbes d'Edwards, i.e pas de cas particulier pour deux points égaux
-	## mais du coup, on ne peut pas tester les points de torsion comme pour weierstrass (?)
+	# l'addition est unifiée sur les courbes d'Edwards, i.e pas de cas particulier pour deux points égaux #
 
 	return add_edwards(P, P, d, N);
 end
@@ -144,32 +139,45 @@ function double_and_add(P::point, x::BigInt, vs::BigInt, N::BigInt, modele::Char
 
 	if modele == 'w'
 
-		double_P = point(0, 1, 0)
+		R = point(0, 1, 0)
+		double_P = P
 
-		for i = (length(bin_x) - 1):-1:1
-			
-			double_P = double_weierstrass(P, vs, N) # double
+		for i = 1:length(bin_x)
 
 			if bin_x[i] == 1
-				P = add_weierstrass(P, double_P, vs, N) # add
+				R = add_weierstrass(R, double_P, vs, N) # add
 			end
+
+			double_P = double_weierstrass(double_P, vs, N) # double ##### POURQUOI P EN PARAMETRE ?!!!!! #
 		end
 
 	elseif modele == 'e'
 
-		double_P = point(0, 1, 1)
+		#double_P = point(0, 1, 1)
 
-		for i = (length(bin_x) - 1):-1:1
+		#for i = length(bin_x):-1:1
 			
-			double_P = double_edwards(P, vs, N) # double
+			#double_P = double_edwards(P, vs, N) # double 
+
+			#if bin_x[i] == 1
+			#	P = add_edwards(P, double_P, vs, N) # add
+			#end
+		#end
+
+		R = point(0, 1, 1)
+		double_P = P
+
+		for i = 1:length(bin_x)
 
 			if bin_x[i] == 1
-				P = add_edwards(P, double_P, vs, N) # add
+				R = add_edwards(R, double_P, vs, N) # add
 			end
+
+			double_P = double_edwards(double_P, vs, N) # double 
 		end
 	end
 
-	return P
+	return R
 end
 
 ## à finaliser ##
@@ -193,11 +201,14 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		Xw::BigInt = iround(BigFloat(rand() * (N - 1)))
 		Yw::BigInt = iround(BigFloat(rand() * (N - 1)))
 
-		Pw = point(Xw, Yw, 1)
+		Pw = point(0, 1, 1)
 
 		Rw::point = double_and_add(Pw, x, a, N, 'w')
 
-		return BigInt(gcd(Rw.Z, N))
+		println(Rw)
+		zero2::BigInt = BigInt(gcd(Rw.Z, N))
+		println("PGCD = $zero2")
+		return zero2
 
 	elseif modele == 'e' # Edwards
 
@@ -209,8 +220,8 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		Xe::BigInt = iround(BigFloat(rand() * (N - 1)))
 		Ye::BigInt = iround(BigFloat(rand() * (N - 1)))
 
-		Xe2 = (Xe^2) % N
-		Ye2 = (Ye^2) % N
+		Xe2 = mod(Xe^2, N)
+		Ye2 = mod(Ye^2, N)
 
 		tmp = Xe2 * Ye2 # = x^2 * y^2
 
@@ -225,13 +236,16 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 			end
 		end
 
-		d::BigInt = ((Xe2 + Ye2 - 1) * tmp) % N # d = (x^2 + y^2 - 1) / (x^2 * y^2)
+		d::BigInt = mod((Xe2 + Ye2 - 1) * tmp, N) # d = (x^2 + y^2 - 1) / (x^2 * y^2)
 
 		Pe = point(Xe, Ye, 1)
 
 		Re::point = double_and_add(Pe, x, d, N, 'e')
 
-		return BigInt(gcd(Re.X, N))
+		println(Re)
+		zero::BigInt = BigInt(gcd(Re.X, N))
+		println("PGCD = $zero")
+		return zero
 	end
 end
 
