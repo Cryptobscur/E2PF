@@ -30,8 +30,8 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	tmpV::BigInt = mod((Q.X * P.Z) - (P.X * Q.Z), N)
 	tmpU::BigInt = mod((Q.Y * P.Z) - (P.Y * Q.Z), N)
 
-	if tmpV == 0 # alors P.X = Q.X
-		if tmpU == 0 # alors P.Y = Q.Y donc P = Q
+	if tmpV == 0 # alors P.x = Q.x (coordonnées affines)
+		if tmpU == 0 # alors P.y = Q.y (coordonnées affines) donc P = Q 
 			return double_weierstrass(P, a, N)
 		else # Q = -P donc on additionne P et -P
 			return point(0, 1, 0)
