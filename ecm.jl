@@ -1,7 +1,7 @@
 
 module ecm
 
-export ecm_f, double_and_add
+export ecm_f
 
 type point # Un point en coordonnees projectives #
 	X::BigInt
@@ -27,7 +27,10 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 
     # on effectue quelques calculs préliminaires pour accélérer le calcul global #
 
-	tmpV::BigInt = mod((Q.X * P.Z) - (P.X * Q.Z), N)
+	tmpQX_PZ = Q.X * P.Z
+	tmpPX_QZ = P.X * Q.Z
+
+	tmpV::BigInt = mod(tmpQX_PZ - tmpPX_QZ, N) #mod((Q.X * P.Z) - (P.X * Q.Z), N)
 	tmpU::BigInt = mod((Q.Y * P.Z) - (P.Y * Q.Z), N)
 
 	if tmpV == 0 # alors P.x = Q.x (coordonnées affines)
@@ -38,14 +41,14 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 		end
 	end
 	
-	tmpUU::BigInt = mod(tmpU^2, N)
-	tmpVV::BigInt = mod(tmpV^2, N)
+	tmpUU::BigInt = tmpU * tmpU #mod(tmpU^2, N)
+	tmpVV::BigInt = tmpV * tmpV #mod(tmpV^2, N)
 
-	tmpZP_ZQ::BigInt = mod(P.Z * Q.Z, N)
+	tmpZP_ZQ::BigInt = P.Z * Q.Z #mod(P.Z * Q.Z, N)
 
 	# tmpX contient la valeur R.X / tmpV, elle est utilisée pour le calcul de R.Y #
 
-	tmpX::BigInt = mod((tmpUU * tmpZP_ZQ) - ((P.X * Q.Z + Q.X * P.Z) * tmpVV), N) # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^2)
+	tmpX::BigInt = mod((tmpUU * tmpZP_ZQ) - ((tmpPX_QZ + tmpQX_PZ) * tmpVV), N) # formule initiale : (tmpU^2 * P.Z * Q.Z) - (((P.X * Q.Z) + (Q.X * P.Z)) * tmpV^2)
 
 	# on calcule les valeurs du point R, somme de P et Q #
 
@@ -54,7 +57,6 @@ function add_weierstrass(P::point, Q::point, a::BigInt, N::BigInt)
 	R.X = mod(tmpX * tmpV, N) # formule initiale : tmpU^2 * tmpV * P.Z * Q.Z - ((P.X * Q.Z) - (Q.X * P.Z)) * tmpV^3
 
 	return R
-
 end
 
 ## Doublement d'un point P (= 2P) sur une courbe de Weierstrass : y^2 = x^3 + ax + b ##
@@ -76,8 +78,8 @@ function double_weierstrass(P::point, a::BigInt, N::BigInt)
 	
 	tmpU::BigInt = mod(3 * (P.X)^2 + a * (P.Z)^2, N)
 
-	tmpUU::BigInt = mod(tmpU^2, N)
-	tmpVV::BigInt = mod(tmpV^2, N)
+	tmpUU::BigInt = tmpU * tmpU #mod(tmpU^2, N)
+	tmpVV::BigInt = tmpV * tmpV #mod(tmpV^2, N)
 
 	tmpVVV::BigInt = mod(tmpV * tmpVV, N)
 
@@ -104,16 +106,16 @@ function add_edwards(P::point, Q::point, d::BigInt, N::BigInt)
 
 	## le calcul trouve sa source ici : http://www.hyperelliptic.org/EFD/g1p/auto-edwards-projective.html#addition-add-2007-bl ##
 
-	A::BigInt = mod(P.Z * Q.Z, N)
+	A::BigInt = P.Z * Q.Z
 	B::BigInt = mod(A^2, N)
 
-	C::BigInt = mod(P.X * Q.X, N)
-	D::BigInt = mod(P.Y * Q.Y, N)
+	C::BigInt = P.X * Q.X
+	D::BigInt = P.Y * Q.Y
 
 	E::BigInt = mod(d * C * D, N)
 
 	F::BigInt = mod(B - E, N)
-	G::BigInt = mod(B + E, N)
+	G::BigInt = B + E
 
 	R.X = mod(A * F * ((P.X + P.Y) * (Q.X + Q.Y) - C - D), N)		
 	R.Y = mod(A * G * (D - C), N)
@@ -132,9 +134,7 @@ end
 
 ## Algorithme Double & Add pour calculer des expressions du type x * P, avec x un entier et P un point sur une courbe ##
 ## 'vs' désigne la valeur dite "statique" dans la courbe elliptique employée (une constante en gros) ##
-function double_and_add(P::point, x::BigInt, vs::BigInt, N::BigInt, modele::Char) 
-
-	bin_x = digits(x, 2) # on récupère x en base deux
+function double_and_add(P::point, bin_x::Array {Int}, l::Int, vs::BigInt, N::BigInt, modele::Char) 
 	
 	## julia n'a pas encore de switch (officiel du moins) pour l'instant... ##
 
@@ -143,13 +143,16 @@ function double_and_add(P::point, x::BigInt, vs::BigInt, N::BigInt, modele::Char
 		R = point(0, 1, 0)
 		double_P = P
 
-		for i = 1:length(bin_x)
+		for i = 1:l
 
 			if bin_x[i] == 1
 				R = add_weierstrass(R, double_P, vs, N) # add
 			end
+			
+			if(i != l)
+				double_P = double_weierstrass(double_P, vs, N) # double
+			end
 
-			double_P = double_weierstrass(double_P, vs, N) # double ##### POURQUOI P EN PARAMETRE ?!!!!! #
 		end
 
 	elseif modele == 'e'
@@ -171,7 +174,7 @@ function double_and_add(P::point, x::BigInt, vs::BigInt, N::BigInt, modele::Char
 end
 
 ## à finaliser ##
-function ecm_f(x::BigInt, N::BigInt, modele::Char)
+function ecm_f(bin_x::Array{Int}, l::Int, N::BigInt, modele::Char)
 
 	## julia n'a pas encore de switch (officiel du moins) pour l'instant... ##
 
@@ -188,16 +191,14 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		## si jamais on fixe b à 1 (bien que cela ne change rien du point de vue du code) on peut alors
 		## prendre d'office le point (0:1:1) et on s'évite les deux lignes de code ci-dessous, mais est-ce un choix judicieux ?
 
-		Xw::BigInt = iround(BigFloat(rand() * (N - 1)))
-		Yw::BigInt = iround(BigFloat(rand() * (N - 1)))
+		#Xw::BigInt = iround(BigFloat(rand() * (N - 1)))
+		#Yw::BigInt = iround(BigFloat(rand() * (N - 1)))
 
 		Pw = point(0, 1, 1) # 0 et 1 ou Xw et Yw ?
 
-		Rw::point = double_and_add(Pw, x, a, N, 'w')
+		Rw::point = double_and_add(Pw, bin_x, l, a, N, 'w')
 
-		println(Rw)
 		val::BigInt = BigInt(gcd(Rw.Z, N))
-		println("PGCD = $val")
 		return val
 
 	elseif modele == 'e' # Edwards
@@ -205,7 +206,7 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		## On initialise une courbe et un point sur cette courbe.
 		## On fixe la coordonnée Z à 1 afin de se retrouver sous la forme x^2 + y^2 = 1 + d * x^2 * y^ 2
 		## De cette façon, d est déterminé par le calcul de (x^2 + y^2 - 1) / (x^2 * y^2)
-		## et on obtient un point valable (l'inversion est ici inévitable ?)
+		## et on obtient un point valable
 
 		Xe::BigInt = iround(BigFloat(rand() * (N - 1)))
 		Ye::BigInt = iround(BigFloat(rand() * (N - 1)))
@@ -221,7 +222,6 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 		try tmp = invmod(tmp, N) # on tente d'inverser x^2 * y^2
 		catch test
 			if isa(test, ErrorException) # si l'inversion n'est pas possible, on a trouvé un facteur de N
-				println("inversion impossible !")
 				return BigInt(gcd(tmp, N))
 			end
 		end
@@ -230,11 +230,9 @@ function ecm_f(x::BigInt, N::BigInt, modele::Char)
 
 		Pe = point(Xe, Ye, 1)
 
-		Re::point = double_and_add(Pe, x, d, N, 'e')
+		Re::point = double_and_add(Pe, bin_x, l, d, N, 'e')
 
-		println(Re)
 		val2::BigInt = BigInt(gcd(Re.X, N))
-		println("PGCD = $val2")
 		return val2
 	end
 end
